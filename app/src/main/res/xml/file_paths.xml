@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<paths xmlns:android="http://schemas.android.com/apk/res/android">
+
+   <!--外部存储区域目录下-->
+   <!-- <external-path
+        name="picDic"
+        path="cash360/tiger"/>-->
+
+
+    <!--代表app 外部存储区域根目录下的文件 Context.getExternalFilesDir(Environment.DIRECTORY_PICTURES)目录下的Pictures目录-->
+    <!--/storage/emulated/0/Android/data/com.hm.camerademo/files/Pictures-->
+    <external-files-path name="hm_external_files" path="Pictures" />
+
+
+
+
+
+
+
+</paths>
