@@ -142,7 +142,7 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
 
                 //将图片复制一份到自身的App-specific 目录下文件,
                 // 然后使用 Luban 设置成App-specific目录下的文件夹
-                final File file = FileUtil.compressPic(mContext, imageUri, FileUtil.getImageName("IMG_ARTWORK"));
+                final File file = FileUtil.compressPic(mContext, Uri.parse(imageUri), FileUtil.getImageName("IMG_ARTWORK"));
 
                 if (file != null) {
                     path = file.getAbsolutePath();

@@ -68,13 +68,13 @@ public class FileUtil {
 
 
     /**
-     * 复制文件到私有目录下
+     * 复制文件到沙箱私有目录下
      *
      * @param fileUri 要复制文件的uri
      * @param newFile 新文件的对象
      * @return 是否复制成功
      */
-    public static boolean copyFileToAppSpecificDir(Context context, String fileUri, File newFile) {
+    public static boolean copyFileToAppSpecificDir(Context context, Uri fileUri, File newFile) {
         FileInputStream fileOS = null;
         //将图片Uri文件拷贝到 沙箱的目录中
         try {
@@ -112,16 +112,16 @@ public class FileUtil {
      * @return FileInputStream
      * @throws FileNotFoundException
      */
-    public static FileInputStream getFileInputStream(Context context, String fileUri) throws FileNotFoundException {
+    public static FileInputStream getFileInputStream(Context context, Uri fileUri) throws FileNotFoundException {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            ParcelFileDescriptor parcelFileDescriptor = context.getContentResolver().openFileDescriptor(Uri.parse(fileUri), "r");
+            ParcelFileDescriptor parcelFileDescriptor = context.getContentResolver().openFileDescriptor(fileUri, "r");
             if (parcelFileDescriptor != null) {
                 return new FileInputStream(parcelFileDescriptor.getFileDescriptor());
             } else {
                 return null;
             }
         } else {
-            return new FileInputStream(uri2File(context, Uri.parse(fileUri)));
+            return new FileInputStream(getFileFromUri(context, fileUri));
         }
     }
 
@@ -137,7 +137,7 @@ public class FileUtil {
      * @param uri     uri
      * @return
      */
-    public static File uri2File(Context context, Uri uri) {
+    public static File getFileFromUri(Context context, Uri uri) {
         String imgPath = "";
         String[] proj = {MediaStore.Images.Media.DATA};
         Cursor cursor = context.getContentResolver().query(uri, proj, null, null, null);
@@ -233,7 +233,7 @@ public class FileUtil {
      * @param newFileName 新文件的文件名
      * @return File
      */
-    public static File compressPic(Context context, String uriPath, String newFileName) {
+    public static File compressPic(Context context, Uri uriPath, String newFileName) {
         File newFile = FileUtil.newFileInAs(context, newFileName);
         if (newFile == null) {
             return null;
