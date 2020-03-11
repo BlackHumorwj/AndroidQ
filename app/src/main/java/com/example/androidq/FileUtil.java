@@ -38,6 +38,7 @@ public class FileUtil {
 
     public static final String MINE_TYPE_IMAGE_JPEG = "image/JPEG";
     public static final String MINE_TYPE_APK = "application/vnd.android.package-archive";
+
     /**
      * 获取私有文件夹下图片目录
      *
@@ -129,6 +130,7 @@ public class FileUtil {
         return new FileInputStream(file);
     }
 
+    final static String[] proj = {MediaStore.Images.Media.DATA, MediaStore.Images.Media._ID};
 
     /**
      * 通过uri查找对应的File文件
@@ -139,14 +141,12 @@ public class FileUtil {
      */
     public static File getFileFromUri(Context context, Uri uri) {
         String imgPath = "";
-        String[] proj = {MediaStore.Images.Media.DATA};
+
         Cursor cursor = context.getContentResolver().query(uri, proj, null, null, null);
         if (cursor == null) {
             imgPath = uri.getPath();
         } else {
-            int actualImageColumnIndex = cursor.getColumnIndexOrThrow(MediaStore.Images.Media.DATA);
-            cursor.moveToFirst();
-            imgPath = cursor.getString(actualImageColumnIndex);
+            imgPath = cursor.getString(cursor.getColumnIndexOrThrow(proj[0]));
         }
         File file = new File(imgPath);
         if (cursor != null) {
@@ -314,7 +314,6 @@ public class FileUtil {
             closeIO(outputStream);
         }
     }
-
 
 
     /**

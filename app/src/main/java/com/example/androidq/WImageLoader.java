@@ -58,6 +58,7 @@ public class WImageLoader {
 
             String imageMimeType = cursor.getString(cursor.getColumnIndexOrThrow(IMAGE_PROJECTION[2]));
             long imageAddTime = cursor.getLong(cursor.getColumnIndexOrThrow(IMAGE_PROJECTION[3]));
+
             int id = cursor.getInt(cursor.getColumnIndexOrThrow(IMAGE_PROJECTION[4]));
 
             //Android Q 公有目录只能通过Content Uri + id的方式访问，以前的File路径全部无效，如果是Video，记得换成MediaStore.Videos
