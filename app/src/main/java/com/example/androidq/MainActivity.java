@@ -8,6 +8,7 @@ import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.provider.MediaStore;
+import android.util.Log;
 import android.view.View;
 import android.widget.ImageView;
 
@@ -158,7 +159,6 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
     }
 
 
-
     private void takePhoto(Context context) {
         //图片直接保存到沙箱内
         final File picDir = FileUtil.getAppSpecificPicDir(mContext);
@@ -204,8 +204,13 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
                         public void run() {
                             final File file = FileUtil.compressPic(mContext, mNewFile);
                             if (file != null) {
-                                final Uri compressed = FileUtil.insertImage(mContext, file.getAbsolutePath(), FileUtil.getImageName("IMG_COMPRESSED"));
-                                FileUtil.writeFile(mContext, compressed, file);
+                                final Uri compressed = FileUtil.insertImage(mContext, FileUtil.getImageName("IMG_COMPRESSED"));
+
+                                final boolean uri = FileUtil.file2Uri(mContext, compressed, file);
+
+                                Log.e("xxx", uri + "");
+
+
                                 path = file.getAbsolutePath();
                             } else {
 

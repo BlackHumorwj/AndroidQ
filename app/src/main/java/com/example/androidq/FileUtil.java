@@ -36,6 +36,8 @@ public class FileUtil {
      */
     public static final int KB = 1024;
 
+    public static final String MINE_TYPE_IMAGE_JPEG = "image/JPEG";
+    public static final String MINE_TYPE_APK = "application/vnd.android.package-archive";
     /**
      * 获取私有文件夹下图片目录
      *
@@ -76,8 +78,10 @@ public class FileUtil {
         FileInputStream fileOS = null;
         //将图片Uri文件拷贝到 沙箱的目录中
         try {
+
             fileOS = getFileInputStream(context, fileUri);
-            return writeFileFromIS(newFile, fileOS, false);
+            return is2File(newFile, fileOS, false);
+
         } catch (FileNotFoundException e) {
             e.printStackTrace();
         } finally {
@@ -91,7 +95,8 @@ public class FileUtil {
         //将图片Uri文件拷贝到 沙箱的目录中
         try {
             fileOS = getFileInputStream(context, fileUri);
-            return writeFileFromIS(newFile, fileOS, false);
+
+            return is2File(newFile, fileOS, false);
         } catch (FileNotFoundException e) {
             e.printStackTrace();
         } finally {
@@ -125,6 +130,13 @@ public class FileUtil {
     }
 
 
+    /**
+     * 通过uri查找对应的File文件
+     *
+     * @param context Context
+     * @param uri     uri
+     * @return
+     */
     public static File uri2File(Context context, Uri uri) {
         String imgPath = "";
         String[] proj = {MediaStore.Images.Media.DATA};
@@ -144,13 +156,40 @@ public class FileUtil {
 
     }
 
-
-    public static boolean writeFileFromIS(File file, InputStream is, boolean append) {
+    /**
+     * 输入流宝 拷贝文件中
+     *
+     * @param file   文件
+     * @param is     输入流
+     * @param append
+     * @return
+     */
+    public static boolean is2File(File file, InputStream is, boolean append) {
         if (file == null || is == null)
             return false;
-        OutputStream os = null;
         try {
-            os = new BufferedOutputStream(new FileOutputStream(file, append));
+            return is2Os(is, new FileOutputStream(file, append));
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+
+    /**
+     * 输入流 拷贝 到输出流中
+     *
+     * @param is InputStream
+     * @param os OutputStream
+     * @return 是否成功
+     */
+    public static boolean is2Os(InputStream is, OutputStream os) {
+        if (is == null || os == null) {
+            return false;
+        }
+
+        try {
+            os = new BufferedOutputStream(os);
             byte data[] = new byte[KB];
             int len;
             while ((len = is.read(data, 0, KB)) != -1) {
@@ -163,7 +202,9 @@ public class FileUtil {
         } finally {
             closeIO(is, os);
         }
+
     }
+
 
     /**
      * 关闭IO
@@ -248,16 +289,6 @@ public class FileUtil {
         return preName + "_" + getDateString() + ".jpg";
     }
 
-    private static String getDateString() {
-        final Calendar calendar = Calendar.getInstance();
-        int year = calendar.get(Calendar.YEAR);
-        int month = calendar.get(Calendar.MONTH) + 1;
-        int day = calendar.get(Calendar.DAY_OF_MONTH);
-        int hour = calendar.get(Calendar.HOUR);
-        int minute = calendar.get(Calendar.MINUTE);
-        int second = calendar.get(Calendar.SECOND);
-        return "" + year + month + day + "_" + hour + minute + second;
-    }
 
     //将文件保存到公共的媒体文件夹
     //这里的filepath不是绝对路径，而是某个媒体文件夹下的子路径，和沙盒子文件夹类似
@@ -266,7 +297,7 @@ public class FileUtil {
 
         OutputStream outputStream = null;
         try {
-            Uri uri = insertImage(context, filePath, fileName);
+            Uri uri = insertImage(context, fileName);
             if (uri != null) {
                 //若生成了uri，则表示该文件添加成功
                 //使用流将内容写入该uri中即可
@@ -284,72 +315,97 @@ public class FileUtil {
         }
     }
 
+
+
     /**
-     *  文件存入公共文件夹中，返回Uri,此时并没有真正插入
+     * 文件存入公共文件夹中，返回Uri,此时并没有真正插入
+     *
      * @param context  Context
-     * @param filePath 文件的原路径
      * @param fileName 插入后的文件名
      * @return
      */
 
-    public static Uri insertImage(Context context, String filePath, String fileName) {
-
-        try {
-            //设置保存参数到ContentValues中
-            ContentValues contentValues = new ContentValues();
-            //设置文件名
-            contentValues.put(MediaStore.Images.Media.DISPLAY_NAME, fileName);
-            //兼容Android Q和以下版本
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                //android Q中不再使用DATA字段，而用RELATIVE_PATH代替
-                //RELATIVE_PATH是相对路径不是绝对路径
-                //DCIM是系统文件夹，关于系统文件夹可以到系统自带的文件管理器中查看，不可以写没存在的名字
-                contentValues.put(MediaStore.Images.Media.RELATIVE_PATH, "DCIM/Pictures");
-                //contentValues.put(MediaStore.Images.Media.RELATIVE_PATH, "Music/signImage");
-            } else {
-                //contentValues.put(MediaStore.Images.Media.DATA, Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES).getPath());
-                contentValues.put(MediaStore.Images.Media.DATA, filePath);
-            }
-            //设置文件类型
-            contentValues.put(MediaStore.Images.Media.MIME_TYPE, "image/JPEG");
-            //执行insert操作，向系统文件夹中添加文件
-            //EXTERNAL_CONTENT_URI代表外部存储器，该值不变
-            Uri uri = context.getContentResolver().insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, contentValues);
-
-            return uri;
-
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        return null;
+    public static Uri insertImage(Context context, String fileName) {
+        return insert(context, fileName, Environment.DIRECTORY_PICTURES, MINE_TYPE_IMAGE_JPEG);
     }
+
+
+    /**
+     * @param context      Context
+     * @param displayName  文件名称
+     * @param relativePath 相对路径不是绝对路径，系统自带
+     * @param mineType     文件类型
+     * @return Uri
+     */
+    public static Uri insert(Context context, String displayName, String relativePath, String mineType) {
+
+        //设置保存参数到ContentValues中
+        ContentValues contentValues = new ContentValues();
+        //设置文件名
+        contentValues.put(MediaStore.Images.Media.DISPLAY_NAME, displayName);
+        //兼容Android Q和以下版本
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            //android Q中不再使用DATA字段，而用RELATIVE_PATH代替
+            //RELATIVE_PATH是相对路径不是绝对路径
+            //DCIM是系统文件夹，关于系统文件夹可以到系统自带的文件管理器中查看，不可以写没存在的名字
+            contentValues.put(MediaStore.Images.Media.RELATIVE_PATH, relativePath);
+            //contentValues.put(MediaStore.Images.Media.RELATIVE_PATH, "Music/signImage");
+        } else {
+            //contentValues.put(MediaStore.Images.Media.DATA, Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES).getPath());
+            contentValues.put(MediaStore.Images.Media.DATA, Environment.getExternalStoragePublicDirectory(relativePath).getPath() + "/" + displayName);
+        }
+        //设置文件类型
+        contentValues.put(MediaStore.Images.Media.MIME_TYPE, mineType);
+        //执行insert操作，向系统文件夹中添加文件
+        //EXTERNAL_CONTENT_URI代表外部存储器，该值不变
+        Uri uri = context.getContentResolver().insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, contentValues);
+        return uri;
+    }
+
 
     /**
      * 将file文件拷贝到 uri路径中
+     *
      * @param context Context
-     * @param uri 接收数据端
-     * @param file 源文件
+     * @param uri     接收数据端
+     * @param file    源文件
      * @return
      */
-    public static boolean writeFile(Context context, Uri uri, File file) {
-        FileOutputStream outputStream = null;
-        FileInputStream fileInputStream = null;
+    public static boolean file2Uri(Context context, Uri uri, File file) {
 
-        if (uri == null) {
+        if (uri == null || file == null) {
             return false;
         }
 
         try {
+            return is2Uri(context, uri, new FileInputStream(file));
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
+
+
+    /**
+     * InputStream 拷贝到 uri 中
+     *
+     * @param context Context
+     * @param uri     Uri
+     * @param is      InputStream
+     * @return
+     */
+
+    public static boolean is2Uri(Context context, Uri uri, InputStream is) {
+        FileOutputStream outputStream = null;
+
+        if (uri == null) {
+            return false;
+        }
+        try {
             AssetFileDescriptor assetFileDescriptor = context.getContentResolver().openAssetFileDescriptor(uri, "rw");
             if (assetFileDescriptor != null) {
                 outputStream = assetFileDescriptor.createOutputStream();
-                fileInputStream = new FileInputStream(file);
-                int len;
-                byte[] data = new byte[KB];
-                while ((len = fileInputStream.read(data, 0, KB)) != -1) {
-                    outputStream.write(data, 0, len);
-                }
-                return true;
+                return is2Os(is, outputStream);
             } else {
                 return false;
             }
@@ -358,10 +414,22 @@ public class FileUtil {
         } catch (IOException e) {
             e.printStackTrace();
         } finally {
-            closeIO(outputStream, fileInputStream);
+            closeIO(outputStream, is);
         }
 
         return false;
+    }
+
+
+    private static String getDateString() {
+        final Calendar calendar = Calendar.getInstance();
+        int year = calendar.get(Calendar.YEAR);
+        int month = calendar.get(Calendar.MONTH) + 1;
+        int day = calendar.get(Calendar.DAY_OF_MONTH);
+        int hour = calendar.get(Calendar.HOUR);
+        int minute = calendar.get(Calendar.MINUTE);
+        int second = calendar.get(Calendar.SECOND);
+        return "" + year + month + day + "_" + hour + minute + second;
     }
 
 
